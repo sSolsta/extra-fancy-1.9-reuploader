@@ -1,0 +1,6 @@
+[package]
+name = "extra-fancy-19-reuploader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
