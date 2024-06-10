@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 use crate::models::object::LevelObject;
 
-struct ObjectList {
-    header: HashMap<String, String>,
-    objects: Vec<LevelObject>,
-}
-
-enum ObjectCodec {
+enum ObjectList {
     Encoded(String),
-    Decoded(ObjectList),
+    Decoded {
+        header: HashMap<String, String>,
+        objects: Vec<LevelObject>,
+    },
 }
 
 pub enum Song {
@@ -19,7 +17,7 @@ pub enum Song {
 pub struct Level {
     name: String,
     description: String,
-    objects: ObjectCodec,
+    objects: ObjectList,
     song: Song,
     version: u32,
     length: u32,

@@ -10,7 +10,7 @@ struct ObjectVariant {
 }
 
 impl ObjectVariant {
-    pub fn from_id(id: u32) -> Option<ObjectVariant> {
+    pub fn from_id(id: u16) -> Option<ObjectVariant> {
         None  // placeholder
     }
 }
