@@ -1,8 +1,8 @@
-[package]
-name = "extra-fancy-19-reuploader"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[dependencies]
-itertools = "0.13.0"
-plist = "1.6.1"
+members = [
+    "ef19-core",
+    "ef19-standalone",
+    "ef19-webapi",
+]
+resolver = "2"

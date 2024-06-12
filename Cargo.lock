@@ -18,6 +18,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ef19-core"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "plist",
+]
+
+[[package]]
+name = "ef19-standalone"
+version = "0.1.0"
+
+[[package]]
+name = "ef19-webapi"
+version = "0.1.0"
+
+[[package]]
 name = "either"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,14 +44,6 @@ name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
-
-[[package]]
-name = "extra-fancy-19-reuploader"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "plist",
-]
 
 [[package]]
 name = "hashbrown"
