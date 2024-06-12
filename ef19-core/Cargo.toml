@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+base64 = "0.22.1"
+flate2 = { version = "1.0.30", features = ["zlib"], default-features = false }
 itertools = "0.13.0"
 plist = "1.6.1"
