@@ -1,7 +1,17 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    error::Error,
+    io::Read,
+};
 use itertools::{Itertools, join};
+use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use flate2::{
+    read::{GzDecoder, GzEncoder},
+    Compression,
+};
 
-pub mod gmdfile;
+pub mod gdshare;
+pub mod server;
 
 pub fn deserialise_kv(input: &str, sep: &str) -> HashMap<String, String> {
     let mut map = HashMap::new();
@@ -15,9 +25,42 @@ pub fn deserialise_kv(input: &str, sep: &str) -> HashMap<String, String> {
 }
 
 pub fn serialise_kv(map: &HashMap<String, String>, sep: &str) -> String {
-    let joined_kvs = map.iter().map(|(k, v)| join([k, v], sep));
+    let mut serialised = String::new();
+        let mut kvs = map.iter();
+        if let Some((k, v)) = kvs.next() {
+            serialised.push_str(k);
+            serialised.push_str(sep);
+            serialised.push_str(v);
+            
+            for (k, v) in kvs {
+                serialised.push_str(sep);
+                serialised.push_str(k);
+                serialised.push_str(sep);
+                serialised.push_str(v);
+            }
+        }
+        
+        serialised
+}
+
+pub fn zip_string(unzipped: &str) -> Result<String, Box<dyn Error>> {
+    let mut encoder = GzEncoder::new(unzipped.as_bytes(), Compression::new(9));
+    let mut bytes = Vec::new();
     
-    join(joined_kvs, sep)
+    encoder.read_to_end(&mut bytes)?;
+    
+    Ok(URL_SAFE.encode(bytes))
+}
+
+pub fn unzip_string(zipped: &str) -> Result<String, Box<dyn Error>> {
+    let bytes = URL_SAFE.decode(zipped)?;
+    
+    let mut unzipped = String::new();
+    let mut decoder = GzDecoder::new(bytes.as_slice());
+    
+    decoder.read_to_string(&mut unzipped)?;
+    
+    Ok(unzipped)
 }
 
 // tests
@@ -54,6 +97,14 @@ mod tests {
         assert_eq!(map.get("3").unwrap(), "4");
         assert_eq!(map.get("5").unwrap(), "6");
         assert_eq!(map.get("8").unwrap(), "shit");
+    }
+    #[test]
+    fn zip_cycle() {
+        let string = "awawawawawawawawawawawawawawawawa".to_string();
+        let zipped = zip_string(&string).unwrap();
+        println!("{}", zipped);
+        let unzipped = unzip_string(&zipped).unwrap();
+        assert_eq!(string, unzipped);
     }
 }
 
