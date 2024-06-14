@@ -9,7 +9,7 @@ pub enum Color {
     DLine = 8,  // 3d line
 }
 impl Color {
-    pub fn from_old_id(id: u32) -> Option<Color> {
+    pub fn from_old_id(id: u8) -> Option<Color> {
         match id {
             1 => Some(Color::Player1),
             2 => Some(Color::Player2),
@@ -22,7 +22,7 @@ impl Color {
             _ => None,
         }
     }
-    pub fn from_new_id(id: u32) -> Option<Color> {
+    pub fn from_new_id(id: u16) -> Option<Color> {
         match id {
             1 => Some(Color::Col1),
             2 => Some(Color::Col2),

@@ -26,3 +26,9 @@ pub struct Level {
     has_low_detail: bool,
 }
 
+impl Level {
+    // pub fn from_server_string(string: &str) -> Option<Level> {}
+    
+    // pub fn from_server_map(map: &HashMap<String, String>) -> Option<Level> {}
+}
+

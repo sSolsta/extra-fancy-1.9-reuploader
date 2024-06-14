@@ -3,7 +3,7 @@ use std::{
     error::Error,
     io::Read,
 };
-use itertools::{Itertools, join};
+use itertools::Itertools;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use flate2::{
     read::{GzDecoder, GzEncoder},
@@ -39,7 +39,6 @@ pub fn serialise_kv(map: &HashMap<String, String>, sep: &str) -> String {
                 serialised.push_str(v);
             }
         }
-        
         serialised
 }
 
