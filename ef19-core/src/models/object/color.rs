@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
     Player1 = 1,
     Player2 = 2,

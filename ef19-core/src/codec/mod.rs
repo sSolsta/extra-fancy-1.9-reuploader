@@ -12,6 +12,7 @@ use flate2::{
 
 pub mod gdshare;
 pub mod server;
+pub mod format;
 
 pub fn deserialise_kv(input: &str, sep: &str) -> HashMap<String, String> {
     let mut map = HashMap::new();

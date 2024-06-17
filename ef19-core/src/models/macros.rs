@@ -35,7 +35,7 @@ macro_rules! attr_from_map {
         match $m.remove($i) {
             Some(v) => match v.parse::<u8>() {
                 Ok(0u8) => false,
-                Ok(1u8) => false,
+                Ok(1u8) => true,
                 _ => $d,
             },
             None => $d,
@@ -55,6 +55,15 @@ macro_rules! attr_from_map {
             },
             None => $d,
         }
+    };
+}
+
+macro_rules! attr_from_gmd {
+    ($m:expr, $i:expr, $t:ty) => {
+        panic!("Not implemented")
+    };
+    ($m:expr, $i:expr, $t:ty, default = $d:expr) => {
+        panic!("Not implemented")
     };
 }
 
