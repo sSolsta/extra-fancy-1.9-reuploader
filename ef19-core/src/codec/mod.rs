@@ -14,6 +14,38 @@ pub mod gdshare;
 pub mod server;
 pub mod format;
 
+pub fn escaped_string(raw: &[u8]) -> String {
+    let mut string = String::new();
+    for c in raw {
+        match *c {
+            9 => string.push_str(r"\t"),
+            10 => string.push_str(r"\r"),
+            13 => string.push_str(r"\n"),
+            32..=91 | 93..=126 => string.push(*c as char),
+            92 => string.push_str(r"\\"),
+            _ => string.push_str(&format!("\\x{:02x}", c)),
+        }
+    }
+    string
+}
+
+pub fn escaped_string_quotes(raw: &[u8]) -> String {
+    let mut string = String::new();
+    for c in raw {
+        match *c {
+            9 => string.push_str(r"\t"),
+            10 => string.push_str(r"\r"),
+            13 => string.push_str(r"\n"),
+            32..=33 | 35..=91 | 93..=126 => string.push(*c as char),
+            34 => string.push_str(r#"\""#),
+            92 => string.push_str(r"\\"),
+            _ => string.push_str(&format!("\\x{:02x}", c)),
+        }
+    }
+    string
+}
+
+// deserialise k:v:k:v style string
 pub fn deserialise_kv(input: &str, sep: &str) -> HashMap<String, String> {
     let mut map = HashMap::new();
     for (k, v) in input.split(sep).tuples() {
@@ -25,6 +57,7 @@ pub fn deserialise_kv(input: &str, sep: &str) -> HashMap<String, String> {
     map
 }
 
+// serialise k:v:k:v style string
 pub fn serialise_kv(map: &HashMap<String, String>, sep: &str) -> String {
     let mut serialised = String::new();
         let mut kvs = map.iter();
@@ -43,6 +76,7 @@ pub fn serialise_kv(map: &HashMap<String, String>, sep: &str) -> String {
         serialised
 }
 
+// gzip encode
 pub fn zip_string(unzipped: &str) -> Result<String, Box<dyn Error>> {
     let mut encoder = GzEncoder::new(unzipped.as_bytes(), Compression::new(9));
     let mut bytes = Vec::new();
@@ -52,6 +86,7 @@ pub fn zip_string(unzipped: &str) -> Result<String, Box<dyn Error>> {
     Ok(URL_SAFE.encode(bytes))
 }
 
+// gzip decode
 pub fn unzip_string(zipped: &str) -> Result<String, Box<dyn Error>> {
     let bytes = URL_SAFE.decode(zipped)?;
     

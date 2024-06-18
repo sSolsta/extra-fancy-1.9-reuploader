@@ -89,7 +89,6 @@ impl LevelObject {
     }
 }
 
-
 mod tests {
     use super::*;
     
@@ -100,7 +99,7 @@ mod tests {
         map.insert("2".to_string(), "20".to_string());
         map.insert("3".to_string(), "44.3".to_string());
         
-        let mut obj = LevelObject::from_map(map).unwrap();
+        let obj = LevelObject::from_map(map).unwrap();
         
         assert_eq!(obj.id, 68);
         assert_eq!(obj.x_pos, 20.0);
@@ -148,7 +147,7 @@ mod tests {
         map.insert("19".to_string(), "3".to_string());
         map.insert("22".to_string(), "3".to_string());
         
-        let mut obj = LevelObject::from_map(map).unwrap();
+        let obj = LevelObject::from_map(map).unwrap();
         
         assert_eq!(obj.id, 68);
         assert_eq!(obj.x_pos, 20.22);
@@ -192,7 +191,7 @@ mod tests {
         map.insert("5".to_string(), "0".to_string());
         map.insert("6".to_string(), "0".to_string());
         
-        let mut obj = LevelObject::from_map(map);
+        let obj = LevelObject::from_map(map);
         assert!(obj.is_none());
     }
     
@@ -204,7 +203,7 @@ mod tests {
         map.insert("3".to_string(), "0".to_string());
         map.insert("22".to_string(), "3".to_string());
         
-        let mut obj = LevelObject::from_map(map).unwrap();
+        let obj = LevelObject::from_map(map).unwrap();
         assert_eq!(obj.color, Some(Color::Col3));
         
         let mut map = HashMap::new();
@@ -213,7 +212,7 @@ mod tests {
         map.insert("3".to_string(), "0".to_string());
         map.insert("22".to_string(), "1003".to_string());
         
-        let mut obj = LevelObject::from_map(map).unwrap();
+        let obj = LevelObject::from_map(map).unwrap();
         assert_eq!(obj.color, Some(Color::DLine));
     }
 }

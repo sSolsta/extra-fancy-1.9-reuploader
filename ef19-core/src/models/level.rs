@@ -45,15 +45,23 @@ impl Level {
             }
         }
     }
-    
-    /* pub fn encode_objects(&mut self) -> Option<bool> {
-        match &self.objects {
-            ObjectList::Encoded(_) => Some(false),
+    // can't be in terms of &mut self because we need ownership of objects
+    pub fn encode_objects(objects: ObjectList) -> Option<String> {
+        match objects {
+            ObjectList::Encoded(v) => Some(v),
             ObjectList::Decoded{ header, objects } => {
-                
+                let mut string = String::new();
+                string.push_str(&codec::serialise_kv(&header, ","));
+                string.push_str(";");
+                for obj in objects {
+                    let map = obj.into_inner();
+                    string.push_str(&codec::serialise_kv(&map, ","));
+                    string.push_str(";");
+                }
+                codec::zip_string(&string).ok()
             }
         }
-    } */
+    }
     
     // pub fn from_server_string(string: &str) -> Option<Level> {}
     
