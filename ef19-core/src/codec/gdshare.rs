@@ -14,6 +14,7 @@ use quick_xml::{
     Error as XmlError,
 };
 
+// generic value format for all possible .gmd value types
 #[derive(Debug)]
 pub enum GmdValue {
     Bool(bool),
@@ -23,6 +24,7 @@ pub enum GmdValue {
     Dict(HashMap<String, GmdValue>),
 }
 
+// error when file is in a valid xml format but does not fit the proper .gmd format
 #[derive(Debug)]
 pub enum FormatError {
     Start(String),
@@ -36,13 +38,13 @@ pub enum FormatError {
 impl fmt::Display for FormatError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            FormatError::Start(s) => write!(f, "unexpected or unrecognised element <{s}>"),
-            FormatError::End(s) => write!(f, "unexpected closing tag </{s}>"),
-            FormatError::Empty(s) => write!(f, "unexpected or unrecognised element <{s}/>"),
-            FormatError::Text(s) => write!(f, "text found where it shouldn't be: \"{s}\""),
-            FormatError::CData => write!(f, "CDATA element found"),
-            FormatError::PI => write!(f, "<?...?> element found"),
-            FormatError::Eof => write!(f, "end of file reached earlier than expected"),
+            Self::Start(s) => write!(f, "unexpected or unrecognised element <{s}>"),
+            Self::End(s) => write!(f, "unexpected closing tag </{s}>"),
+            Self::Empty(s) => write!(f, "unexpected or unrecognised element <{s}/>"),
+            Self::Text(s) => write!(f, "text found where it shouldn't be: \"{s}\""),
+            Self::CData => write!(f, "CDATA element found"),
+            Self::PI => write!(f, "<?...?> element found"),
+            Self::Eof => write!(f, "end of file reached earlier than expected"),
         }
     }
 }
@@ -50,20 +52,20 @@ impl std::error::Error for FormatError {}
 impl From<XmlEvent<'_>> for FormatError {
     fn from(event: XmlEvent<'_>) -> Self {
         match event {
-            XmlEvent::Start(e) => FormatError::Start(escaped_string(e.name().0)),
-            XmlEvent::End(e) => FormatError::End(escaped_string(e.name().0)),
-            XmlEvent::Empty(e) => FormatError::Empty(escaped_string(e.name().0)),
+            XmlEvent::Start(e) => Self::Start(escaped_string(e.name().0)),
+            XmlEvent::End(e) => Self::End(escaped_string(e.name().0)),
+            XmlEvent::Empty(e) => Self::Empty(escaped_string(e.name().0)),
             XmlEvent::Text(e) => {
-                if (&*e).len() < 20 { FormatError::Text(escaped_string_quotes(&*e)) }
+                if (&*e).len() < 20 { Self::Text(escaped_string_quotes(&*e)) }
                 else {
                     let mut string = escaped_string_quotes(&e[..17]);
                     string.push_str("...");
-                    FormatError::Text(string)
+                    Self::Text(string)
                 }
             },
-            XmlEvent::CData(e) => FormatError::CData,
-            XmlEvent::PI(e) => FormatError::PI,
-            XmlEvent::Eof => FormatError::Eof,
+            XmlEvent::CData(e) => Self::CData,
+            XmlEvent::PI(e) => Self::PI,
+            XmlEvent::Eof => Self::Eof,
             _ => { panic!("{event:?} not implemented for unexpected event error"); }
         }
     }
@@ -71,10 +73,11 @@ impl From<XmlEvent<'_>> for FormatError {
 impl From<QName<'_>> for FormatError {
     fn from(name: QName<'_>) -> Self {
         // assume start tag, it doesn't matter too much
-        FormatError::Start(escaped_string(name.0))
+        Self::Start(escaped_string(name.0))
     }
 }
 
+// general error enum for all possible errors when parsing gmd files
 #[derive(Debug)]
 pub enum GmdError {
     Xml(XmlError),
@@ -86,42 +89,43 @@ pub enum GmdError {
 impl fmt::Display for GmdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            GmdError::Xml(e) => write!(f, "xml decode error: {e}"),
-            GmdError::Io(e) => write!(f, "I/O error: {e}"),
-            GmdError::Format(e) => write!(f, "format error: {e}"),
-            GmdError::InvalidInt(e) => write!(f, "invalid value for integer: {e}"),
-            GmdError::InvalidReal(e) => write!(f, "invalid value for real: {e}"),
+            Self::Xml(e) => write!(f, "xml decode error: {e}"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+            Self::Format(e) => write!(f, "format error: {e}"),
+            Self::InvalidInt(e) => write!(f, "invalid value for integer: {e}"),
+            Self::InvalidReal(e) => write!(f, "invalid value for real: {e}"),
         }
     }
 }
 impl std::error::Error for GmdError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            GmdError::Xml(e) => Some(e),
-            GmdError::Io(e) => Some(e),
-            GmdError::Format(e) => Some(e),
-            GmdError::InvalidInt(_) => None,
-            GmdError::InvalidReal(_) => None,
+            Self::Xml(e) => Some(e),
+            Self::Io(e) => Some(e),
+            Self::Format(e) => Some(e),
+            Self::InvalidInt(_) => None,
+            Self::InvalidReal(_) => None,
         }
     }
 }
 impl From<XmlError> for GmdError {
     fn from(e: XmlError) -> Self {
-        GmdError::Xml(e)
+        Self::Xml(e)
     }
 }
 impl From<IoError> for GmdError {
     fn from(e: IoError) -> Self {
-        GmdError::Io(e)
+        Self::Io(e)
     }
 }
 impl From<FormatError> for GmdError {
     fn from(e: FormatError) -> Self {
-        GmdError::Format(e)
+        Self::Format(e)
     }
 }
 pub type GmdResult<T> = std::result::Result<T, GmdError>;
 
+// public function for reading GmdValues into .gmd files
 pub fn gmd_to_bytes(value: GmdValue) -> Option<Vec<u8>> {
     let mut cursor = Cursor::new(Vec::new());
     cursor.write(br#"<?xml version="1.0"?>"#).ok()?;
@@ -160,7 +164,7 @@ fn write_value<W: Write>(writer: &mut XmlWriter<W>, value: &GmdValue) -> XmlResu
 }
 
 fn write_dict<W: Write>(writer: &mut XmlWriter<W>, dict: &HashMap<String, GmdValue>) -> XmlResult<()> {
-    writer.create_element("dict")
+    writer.create_element("d")
         .write_inner_content(|writer| {
             for (k, v) in dict.iter() {
                 writer.create_element("k")
@@ -171,6 +175,7 @@ fn write_dict<W: Write>(writer: &mut XmlWriter<W>, dict: &HashMap<String, GmdVal
         }).map(|_| ())
 }
 
+// public function for reading .gmd files into GmdValues
 pub fn gmd_from_bytes(bytes: &[u8]) -> GmdResult<GmdValue> {
     let mut reader = XmlReader::from_reader(bytes);
     
@@ -250,7 +255,7 @@ fn parse_dict(reader: &mut XmlReader<&[u8]>) -> GmdResult<GmdValue> {
     }
 }
 
-// ignores events that don't matter, returns None on events that shouldn't be there
+// ignores events that don't matter, returns GmdError on events that shouldn't be there
 fn next_gmd_event<'a>(reader: &mut XmlReader<&'a [u8]>) -> GmdResult<XmlEvent<'a>> {
     loop {
         let event = reader.read_event()?;

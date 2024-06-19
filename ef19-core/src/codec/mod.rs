@@ -2,6 +2,8 @@ use std::{
     collections::HashMap,
     error::Error,
     io::Read,
+    io::Error as IoError,
+    fmt,
 };
 use itertools::Itertools;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
@@ -76,8 +78,41 @@ pub fn serialise_kv(map: &HashMap<String, String>, sep: &str) -> String {
         serialised
 }
 
+// error enum for gzip functions
+#[derive(Debug)]
+pub enum ZipError {
+    Base64(base64::DecodeError),
+    Io(IoError),
+}
+impl fmt::Display for ZipError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Base64(e) => write!(f, "base64 decode error: {e}"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+        }
+    }
+}
+impl std::error::Error for ZipError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Base64(e) => Some(e),
+            Self::Io(e) => Some(e),
+        }
+    }
+}
+impl From<base64::DecodeError> for ZipError {
+    fn from(e: base64::DecodeError) -> Self {
+        Self::Base64(e)
+    }
+}
+impl From<IoError> for ZipError {
+    fn from(e: IoError) -> Self {
+        Self::Io(e)
+    }
+}
+
 // gzip encode
-pub fn zip_string(unzipped: &str) -> Result<String, Box<dyn Error>> {
+pub fn zip_string(unzipped: &str) -> Result<String, ZipError> {
     let mut encoder = GzEncoder::new(unzipped.as_bytes(), Compression::new(9));
     let mut bytes = Vec::new();
     
@@ -87,7 +122,7 @@ pub fn zip_string(unzipped: &str) -> Result<String, Box<dyn Error>> {
 }
 
 // gzip decode
-pub fn unzip_string(zipped: &str) -> Result<String, Box<dyn Error>> {
+pub fn unzip_string(zipped: &str) -> Result<String, ZipError> {
     let bytes = URL_SAFE.decode(zipped)?;
     
     let mut unzipped = String::new();
