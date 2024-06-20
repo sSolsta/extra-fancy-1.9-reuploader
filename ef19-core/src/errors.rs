@@ -76,3 +76,5 @@ impl From<ZipError> for Error {
         }
     }
 }
+
+pub type Result<T> = std::result::Result<T, Error>;

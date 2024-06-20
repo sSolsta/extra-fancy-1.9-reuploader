@@ -21,11 +21,13 @@ impl GdFormat for f32 {
         }.to_string()
     }
 }
+
 impl GdFormat for Color {
     fn gd_format(self) -> String {
         (self as isize).to_string()
     }
 }
+
 impl GdFormat for String {
     fn gd_format(self) -> String {
         self

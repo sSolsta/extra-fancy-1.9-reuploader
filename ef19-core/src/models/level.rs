@@ -38,7 +38,7 @@ impl Level {
                     .map(|x| codec::deserialise_kv(x, ","));
                 
                 let header = split.next()?;
-                let objects = split.filter_map(|x| LevelObject::from_map(x)).collect();
+                let objects = split.filter_map(|x| LevelObject::from_map(x).ok()).collect();
                 
                 self.objects = ObjectList::Decoded{ header, objects };
                 Some(true)

@@ -19,17 +19,34 @@ macro_rules! attr_from_map {
         }
     };
     ($m:expr, $i:expr, bool) => {
-        match $m.remove($i)?.parse::<u8>().ok()? {
+        {
+            let key = $i;
+            let val = $m.remove(key).ok_or_else(|| KeyError::Missing{key: key.to_string()})?;
+            match val.parse::<u8>()
+                .map_err(|_| KeyError::Invalid{key: key.to_string(), val: val.to_string()})? {
+                0u8 => Ok(false),
+                1u8 => Ok(true),
+                _ => Err(KeyError::Invalid{key: key.to_string(), val: val.to_string()}),
+            }?
+        }
+        /* match $m.remove($i)?.parse::<u8>().ok()? {
             0u8 => false,
             1u8 => true,
             _ => { return None; },
-        }
+        } */
     };
     ($m:expr, $i:expr, String) => {
-        $m.remove($i)?
+        {
+            let key = $i;
+            $m.remove(key).ok_or(Error::from(KeyError::Missing{key: key.to_string()}))?
+        }
     };
     ($m:expr, $i:expr, $t:ty) => {
-        $m.remove($i)?.parse::<$t>().ok()?
+        {
+            let key = $i;
+            let val = $m.remove(key).ok_or_else(|| KeyError::Missing{key: key.to_string()})?;
+            val.parse::<$t>().map_err(|_| KeyError::Invalid{key: key.to_string(), val: val.to_string()})?
+        }
     };
     ($m:expr, $i:expr, bool, default = $d:expr) => {
         match $m.remove($i) {
@@ -58,13 +75,17 @@ macro_rules! attr_from_map {
     };
 }
 
-macro_rules! attr_from_gmd {
-    ($m:expr, $i:expr, $t:ty) => {
-        panic!("Not implemented")
+pub(crate) use attr_from_map;
+
+macro_rules! attr_from_map_real {
+    ($m:expr, $i:expr, bool) => {
+        
     };
-    ($m:expr, $i:expr, $t:ty, default = $d:expr) => {
-        panic!("Not implemented")
+    ($m:expr, $i:expr, String) => {
+        let key = $i;
+        $m.remove(key).ok_or_else(Error::from(KeyError::Missing{key}))
+    };
+    ($m:expr, $i:expr, $t:ty) => {
+        
     };
 }
-
-pub(crate) use attr_from_map;

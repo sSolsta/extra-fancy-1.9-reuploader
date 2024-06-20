@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use super::macros::attr_from_map;
 pub use color::Color;
 use crate::codec::format::GdFormat;
+use crate::errors::{KeyError, Error, Result};
 
 mod variants;
 mod color;
@@ -24,10 +25,9 @@ pub struct LevelObject {
 
 impl LevelObject {
     // consumes map
-    pub fn from_map(mut map: HashMap<String, String>) -> Option<LevelObject> {
+    pub fn from_map(mut map: HashMap<String, String>) -> Result<LevelObject> {
         // required properties
         let id = attr_from_map!(map, "1", u16);
-        if id == 0 { return None; }
         let x_pos = attr_from_map!(map, "2", f32);
         let y_pos = attr_from_map!(map, "3", f32);
         // defaulted properties
@@ -49,7 +49,7 @@ impl LevelObject {
             }
             Some(v) => Color::from_old_id(v),
         };
-        Some(LevelObject {
+        Ok(LevelObject {
             id,
             x_pos,
             y_pos,
@@ -192,7 +192,7 @@ mod tests {
         map.insert("6".to_string(), "0".to_string());
         
         let obj = LevelObject::from_map(map);
-        assert!(obj.is_none());
+        assert!(obj.is_err());
     }
     
     #[test]
