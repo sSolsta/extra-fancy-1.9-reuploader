@@ -23,7 +23,8 @@ pub enum Error {
     MissingObjectHeader,
     Gmd(GmdError),
     Key(KeyError),
-    Zip(ZipError),
+    Io(IoError),
+    Base64(base64::DecodeError),
 }
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -31,7 +32,8 @@ impl fmt::Display for Error {
             Self::MissingObjectHeader => write!(f, "no object header in level string"),
             Self::Gmd(e) => write!(f, "gmd encode/decode error: {e}"),
             Self::Key(e) => write!(f, "{e}"),
-            Self::Zip(e) => write!(f, "gzip error: {e}"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+            Self::Base64(e) => write!(f, "base64 decode error: {e}"),
         }
     }
 }
@@ -41,7 +43,8 @@ impl std::error::Error for Error {
             Self::MissingObjectHeader => None,
             Self::Gmd(e) => Some(e),
             Self::Key(e) => Some(e),
-            Self::Zip(e) => Some(e),
+            Self::Io(e) => Some(e),
+            Self::Base64(e) => Some(e),
         }
     }
 }
@@ -55,8 +58,21 @@ impl From<KeyError> for Error {
         Self::Key(e)
     }
 }
+impl From<IoError> for Error {
+    fn from(e: IoError) -> Self {
+        Self::Io(e)
+    }
+}
+impl From<base64::DecodeError> for Error {
+    fn from(e: base64::DecodeError) -> Self {
+        Self::Base64(e)
+    }
+}
 impl From<ZipError> for Error {
     fn from(e: ZipError) -> Self {
-        Self::Zip(e)
+        match e {
+            ZipError::Io(e) => Self::Io(e),
+            ZipError::Base64(e) => Self::Base64(e),
+        }
     }
 }
