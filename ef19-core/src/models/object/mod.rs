@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use super::macros::attr_from_map;
 pub use color::Color;
 use crate::codec::format::GdFormat;
-use crate::errors::{KeyError, Error, Result};
+use crate::errors::{KeyError, Error, EResult};
 
 mod variants;
 mod color;
 
+#[derive(Debug, Clone)]
 pub struct LevelObject {
     // properties we want fast access to
     id: u16,  // 1
@@ -25,7 +26,7 @@ pub struct LevelObject {
 
 impl LevelObject {
     // consumes map
-    pub fn from_map(mut map: HashMap<String, String>) -> Result<LevelObject> {
+    pub fn from_map(mut map: HashMap<String, String>) -> Result<LevelObject, Error> {
         // required properties
         let id = attr_from_map!(map, "1", u16);
         let x_pos = attr_from_map!(map, "2", f32);
@@ -64,7 +65,32 @@ impl LevelObject {
         })
     }
     
-    pub fn into_inner(mut self) -> HashMap<String, String> {
+    pub fn map(&self) -> HashMap<String, String> {
+        let mut map = self.other_data.clone();
+        map.insert("1".to_string(), self.id.gd_format());
+        map.insert("2".to_string(), self.x_pos.gd_format());
+        map.insert("3".to_string(), self.y_pos.gd_format());
+        map.insert("4".to_string(), self.flip_x.gd_format());
+        map.insert("5".to_string(), self.flip_y.gd_format());
+        map.insert("6".to_string(), self.rotation.gd_format());
+        if let Some(v) = &self.z_layer {
+            map.insert("24".to_string(), v.gd_format());
+        }
+        if let Some(v) = &self.z_order {
+            map.insert("25".to_string(), v.gd_format());
+        }
+        if let Some(v) = &self.base_hsv {
+            map.insert("41".to_string(), true.gd_format());
+            map.insert("43".to_string(), v.clone());
+        }
+        if let Some(v) = &self.color {
+            map.insert("19".to_string(), v.gd_format());
+        }
+        
+        map
+    }
+    
+    pub fn into_map(mut self) -> HashMap<String, String> {
         self.other_data.insert("1".to_string(), self.id.gd_format());
         self.other_data.insert("2".to_string(), self.x_pos.gd_format());
         self.other_data.insert("3".to_string(), self.y_pos.gd_format());
@@ -113,7 +139,7 @@ mod tests {
         assert_eq!(obj.base_hsv, None);
         assert_eq!(obj.color, None);
         
-        let map = obj.into_inner();
+        let map = obj.into_map();
         for (k, v) in map.iter() {
             match k.as_str() {
                 "1" => { assert_eq!(v, "68"); },
@@ -161,7 +187,7 @@ mod tests {
         assert_eq!(obj.base_hsv.clone().unwrap(), "auawauawuawa");
         assert_eq!(obj.color, Some(Color::Col1));
         
-        let map = obj.into_inner();
+        let map = obj.into_map();
         for (k, v) in map.iter() {
             match k.as_str() {
                 "1" => { assert_eq!(v, "68"); },
@@ -193,6 +219,20 @@ mod tests {
         
         let obj = LevelObject::from_map(map);
         assert!(obj.is_err());
+        println!("{}", obj.unwrap_err());
+        
+        let mut map = HashMap::new();
+        map.insert("1".to_string(), "1".to_string());
+        map.insert("2".to_string(), "0".to_string());
+        // non-float y_pos - invalid
+        map.insert("3".to_string(), "awawa".to_string());
+        map.insert("4".to_string(), "0".to_string());
+        map.insert("5".to_string(), "0".to_string());
+        map.insert("6".to_string(), "0".to_string());
+        
+        let obj = LevelObject::from_map(map);
+        assert!(obj.is_err());
+        println!("{}", obj.unwrap_err());
     }
     
     #[test]

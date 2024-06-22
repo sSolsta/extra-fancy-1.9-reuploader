@@ -259,7 +259,6 @@ fn parse_dict(reader: &mut XmlReader<&[u8]>) -> GmdResult<GmdValue> {
 fn next_gmd_event<'a>(reader: &mut XmlReader<&'a [u8]>) -> GmdResult<XmlEvent<'a>> {
     loop {
         let event = reader.read_event()?;
-        println!("{:?}", event.clone().into_owned());
         break match event {
             XmlEvent::Start(_) => Ok(event),
             XmlEvent::End(_) => Ok(event),

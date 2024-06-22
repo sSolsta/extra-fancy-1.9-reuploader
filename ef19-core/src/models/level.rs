@@ -1,24 +1,72 @@
 use std::collections::HashMap;
 use crate::models::object::LevelObject;
 use crate::codec;
+use crate::errors::{KeyError, Error, EResult};
 
-enum ObjectList {
-    Encoded(String),
-    Decoded {
-        header: HashMap<String, String>,
-        objects: Vec<LevelObject>,
-    },
+#[derive(Debug)]
+struct ObjectList {
+    header: HashMap<String, String>,
+    objects: Vec<LevelObject>,
 }
 
+impl ObjectList {
+    pub fn from_str(object_str: &str) -> EResult<Self> {
+        let decompressed = codec::unzip_string(object_str)?;
+        let mut split = decompressed.split_terminator(";")
+            .map(|x| codec::deserialise_kv(x, ","));
+        let header = match split.next() {
+            Some(header) => {
+                if header.is_empty() {
+                    Err(Error::MissingObjectHeader)
+                } else {
+                    Ok(header)
+                }
+            }
+            None => Err(Error::MissingObjectHeader),
+        }?;
+        let objects = split.filter_map(|x| LevelObject::from_map(x).ok()).collect();
+        Ok(ObjectList {header, objects})
+    }
+    
+    pub fn string(&self) -> EResult<String> {
+        let mut object_str = String::new();
+        object_str.push_str(&codec::serialise_kv(&self.header, ","));
+        object_str.push_str(";");
+        for obj in &self.objects {
+            let map = obj.map();
+            object_str.push_str(&codec::serialise_kv(&map, ","));
+            object_str.push_str(";");
+        }
+        
+        Ok(codec::zip_string(&object_str)?)
+    }
+    
+    pub fn into_string(self) -> EResult<String> {
+        let mut object_str = String::new();
+        object_str.push_str(&codec::serialise_kv(&self.header, ","));
+        object_str.push_str(";");
+        for obj in self.objects {
+            let map = obj.into_map();
+            object_str.push_str(&codec::serialise_kv(&map, ","));
+            object_str.push_str(";");
+        }
+        
+        Ok(codec::zip_string(&object_str)?)
+    }
+}
+
+#[derive(Debug)]
 pub enum Song {
     Official(u32),
     Custom(u32),
 }
 
+#[derive(Debug)]
 pub struct Level {
     name: String,
     description: String,
-    objects: ObjectList,
+    object_str: String,
+    object_list: Option<ObjectList>,
     song: Song,
     version: u32,
     length: u32,
@@ -28,40 +76,6 @@ pub struct Level {
 }
 
 impl Level {
-    // it would be better to make an error type but i am super tired and i don't care enough
-    pub fn decode_objects(&mut self) -> Option<bool> {
-        match &self.objects {
-            ObjectList::Decoded{ .. } => Some(false),
-            ObjectList::Encoded(string) => {
-                let decompressed = codec::unzip_string(&string).ok()?;
-                let mut split = decompressed.split_terminator(";")
-                    .map(|x| codec::deserialise_kv(x, ","));
-                
-                let header = split.next()?;
-                let objects = split.filter_map(|x| LevelObject::from_map(x).ok()).collect();
-                
-                self.objects = ObjectList::Decoded{ header, objects };
-                Some(true)
-            }
-        }
-    }
-    // can't be in terms of &mut self because we need ownership of objects
-    pub fn encode_objects(objects: ObjectList) -> Option<String> {
-        match objects {
-            ObjectList::Encoded(v) => Some(v),
-            ObjectList::Decoded{ header, objects } => {
-                let mut string = String::new();
-                string.push_str(&codec::serialise_kv(&header, ","));
-                string.push_str(";");
-                for obj in objects {
-                    let map = obj.into_inner();
-                    string.push_str(&codec::serialise_kv(&map, ","));
-                    string.push_str(";");
-                }
-                codec::zip_string(&string).ok()
-            }
-        }
-    }
     
     // pub fn from_server_string(string: &str) -> Option<Level> {}
     
